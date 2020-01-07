@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
     // Load weights and golden files
     const std::string outputPath(locateFile(kTEST_OUTPUT_FNAME, gArgs.dataDirs));
     WeightMap testOutputs;
-    loadWeights(outputPath, testOutputs);
+    //loadWeights(outputPath, testOutputs);
 
     vector<Weights> inputIds;
     vector<Weights> inputMasks;
@@ -173,6 +173,8 @@ int main(int argc, char* argv[])
 
     cudaStreamDestroy(stream);
     transposeLogits(output, B, S);
+
+#if 0
     const float* test = reinterpret_cast<const float*>(testOutputs["logits"].values);
 
     // Analyze benchmark results
@@ -204,4 +206,6 @@ int main(int argc, char* argv[])
         pass = meanAbsErr < 1e-5;
     }
     return gLogger.reportTest(sampleTest, pass);
+#endif
+    return gLogger.reportTest(sampleTest, false);
 }

@@ -18,11 +18,13 @@ project(cmake_and_cuda LANGUAGES CXX CUDA)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  \
 --expt-relaxed-constexpr \
 --expt-extended-lambda \
+-std=c++11 \
+-g \
 -gencode arch=compute_70,code=sm_70 \
 -gencode arch=compute_75,code=sm_75 \
 -Wno-deprecated-declarations")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wno-deprecated-declarations")
 
 set(BERT_LIBS
     cudart
@@ -43,7 +45,7 @@ include_directories(
     ../../samples/common/
     ../../third_party/cub/
     /usr/include/x86_64-linux-gnu
-    /usr/local/cuda-10.1/targets/x86_64-linux/include
+    /usr/local/cuda-10.0/include
     /workspace/tensorrt/include
     /workspace/tensorrt/samples/common
     /workspace/cub/
@@ -52,8 +54,9 @@ include_directories(
 
 link_directories(
     /usr/lib/x86_64-linux-gnu
-    /usr/local/cuda-10.1/targets/x86_64-linux/lib
+    /usr/local/cuda-10.0/lib64
     /workspace/tensorrt/lib
+    /home/odin/shendasai/TensorRT6/TensorRT-6.0.1.5/lib
 )
 
 add_library(common SHARED
