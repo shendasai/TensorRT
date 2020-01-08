@@ -91,8 +91,9 @@ void BERTDriver::buildNetwork(nvinfer1::INetworkDefinition* network, const HostT
     ILayer* bertLayer = bertModelDynamic(config, weightMap, network, embeddings, maskIdx);
 
     /// SQuAD Output Layer
-
-    ILayer* squadLayer = squadDynamic("cls_", config, weightMap, network, bertLayer->getOutput(0));
+    //sds: update for hz
+    ILayer* squadLayer = squadDynamic("prediction_module_cls_", config, weightMap, network, bertLayer->getOutput(0));
+    //ILayer* squadLayer = squadDynamic("cls_", config, weightMap, network, bertLayer->getOutput(0));
 
     network->markOutput(*squadLayer->getOutput(0));
 }

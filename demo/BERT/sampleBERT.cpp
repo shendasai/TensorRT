@@ -159,7 +159,9 @@ int main(int argc, char* argv[])
     }
 
     // Benchmark inference
-    const std::string outputName("cls_squad_logits");
+    // sds: update for hz
+    const std::string outputName("prediction_module_cls_squad_logits");
+    //const std::string outputName("cls_squad_logits");
     std::vector<float> output(2 * B * S);
     HostTensorMap outCfg
         = {make_pair(outputName, make_shared<HostTensor>(output.data(), DataType::kFLOAT, std::vector<size_t>{2, static_cast<size_t>(B), static_cast<size_t>(S)}))};
