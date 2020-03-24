@@ -41,18 +41,18 @@
 #include "bertEncoder.h"
 #include "embLayerNormPlugin.h"
 #include "squad.h"
-
+#include "BertFactory.h"
 using namespace bert;
 using namespace nvinfer1;
 
 Args gArgs;
-
+#if 1
 constexpr const char* gSampleName = "TensorRT.sample_bert";
 constexpr const char* kTEST_INPUT_FNAME = "test_inputs.weights_int32";
 constexpr const char* kTEST_OUTPUT_FNAME = "test_outputs.weights";
 constexpr const char* kBERT_WEIGHTS_FNAME = "bert.weights";
 constexpr int kNUM_RUNS = 10;
-
+#endif
 //!
 //! \brief This function prints the help information for running this sample
 //!
@@ -68,6 +68,7 @@ void printHelpInfo()
     std::cout << "--saveEngine    The path at which to write a serialized engine." << endl;
 }
 
+#if 0
 int main(int argc, char* argv[])
 {
     const bool argsOK = parseArgs(gArgs, argc, argv);
@@ -209,5 +210,90 @@ int main(int argc, char* argv[])
     }
     return gLogger.reportTest(sampleTest, pass);
 #endif
+    return gLogger.reportTest(sampleTest, false);
+}
+
+
+#endif
+int main(int argc, char* argv[])
+{
+    const bool argsOK = parseArgs(gArgs, argc, argv);
+    if (gArgs.help)
+    {
+        printHelpInfo();
+        return EXIT_SUCCESS;
+    }
+    if (!argsOK)
+    {
+        gLogError << "Invalid arguments" << endl;
+        printHelpInfo();
+        return EXIT_FAILURE;
+    }
+    if (gArgs.dataDirs.empty())
+    {
+        gLogError << "No datadirs given" << endl;
+        printHelpInfo();
+        return EXIT_FAILURE;
+    }
+    if (gArgs.numHeads <= 0)
+    {
+        gLogError << "invalid number of heads" << endl;
+        printHelpInfo();
+        return EXIT_FAILURE;
+    }
+
+    gLogger.setReportableSeverity(Logger::Severity::kINFO);
+    auto sampleTest = gLogger.defineTest(gSampleName, argc, const_cast<const char**>(argv));
+    gLogger.reportTestStart(sampleTest);
+
+    // Load weights and golden files
+    //const std::string outputPath(locateFile(kTEST_OUTPUT_FNAME, gArgs.dataDirs));
+    WeightMap testOutputs;
+    //loadWeights(outputPath, testOutputs);
+
+    vector<Weights> inputIds;
+    vector<Weights> inputMasks;
+    vector<Weights> segmentIds;
+    vector<Dims> inputDims;
+    const std::string inputPath(locateFile(kTEST_INPUT_FNAME, gArgs.dataDirs));
+
+    int S = 0;
+    int Bmax = 0;
+    loadInputs(inputPath, Bmax, S, inputIds, inputMasks, segmentIds, inputDims);
+    assert(inputIds.size() > 0 && "No inputs found in supplied golden file");
+
+    // Create optimization profiles. In this case, we only create a single profile for the shape we care about.
+    const int numHeads = gArgs.numHeads;
+
+    const auto profile = std::make_tuple(Dims{2, Bmax, S}, Dims{2, Bmax, S}, Dims{2, Bmax, S});
+    OptProfileMap optProfileMap = {std::make_pair(kMODEL_INPUT0_NAME, profile),
+        std::make_pair(kMODEL_INPUT1_NAME, profile), std::make_pair(kMODEL_INPUT2_NAME, profile)};
+
+    OptProfiles optProfiles = {optProfileMap};
+
+    const std::vector<size_t> inputShape(inputDims[0].d, inputDims[0].d + 2);
+    #if 0
+    const HostTensorMap inCfg{
+        std::make_pair(kMODEL_INPUT0_NAME,
+            make_shared<HostTensor>(const_cast<void*>(inputIds[0].values), inputIds[0].type, inputShape)),
+        std::make_pair(kMODEL_INPUT1_NAME,
+            make_shared<HostTensor>(const_cast<void*>(segmentIds[0].values), segmentIds[0].type, inputShape)),
+        std::make_pair(kMODEL_INPUT2_NAME,
+            make_shared<HostTensor>(const_cast<void*>(inputMasks[0].values), inputMasks[0].type, inputShape))};
+    #endif
+    const int B = inputDims[0].d[0];
+
+    WeightMap weightMap;
+
+    const std::string weightsPath(locateFile("bert.weights", gArgs.dataDirs));
+
+   
+    std::vector<float> output(2 * B * S);
+
+    Bert* pBert = createBert("QA");
+    pBert->setParam(numHeads,Bmax,S,gArgs.runInFp16);
+    pBert->init(weightsPath);
+    pBert->forward(inputIds[0], segmentIds[0], inputMasks[0], inputDims[0], output);
+   
     return gLogger.reportTest(sampleTest, false);
 }

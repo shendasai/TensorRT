@@ -13,6 +13,7 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
 project(cmake_and_cuda LANGUAGES CXX CUDA)
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  \
@@ -79,10 +80,17 @@ target_link_libraries(common
     ${BERT_LIBS}
 )
 
-add_executable(sample_bert
+#add_library(sample_bert 
+add_library(bert SHARED
+#add_executable(sample_bert
     bert/bert.cpp
     bert/driver.cpp
     util/dataUtils.cpp
+    BertQA.cpp
+    BertFactory.cpp
+)
+
+add_executable(sample_bert
     sampleBERT.cpp
 )
 
@@ -91,4 +99,5 @@ target_compile_features(sample_bert PUBLIC cxx_std_11)
 target_link_libraries(sample_bert
     common
     bert_plugins
+    bert
 )
